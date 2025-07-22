@@ -1201,6 +1201,34 @@ const isCtrl = function(e) {
     }
 }
 
+// 한글 자음인지 체크하는 함수
+const isKoreanConsonant = function(key) {
+    if (!key || key.length !== 1) return false;
+    const code = key.charCodeAt(0);
+    // 한글 자음 유니코드 범위: ㄱ~ㅎ (12593~12622)
+    return code >= 12593 && code <= 12622;
+};
+
+// 한글 자음 전용 keyup 핸들러
+const keyUpControls = function(e) {
+    // 한글 자음에 대해서만 처리
+    if (!isKoreanConsonant(e.key)) {
+        return;
+    }
+
+    if (libraryBase.jspreadsheet.current && 
+        libraryBase.jspreadsheet.current.selectedCell && 
+        !libraryBase.jspreadsheet.current.edition &&
+        libraryBase.jspreadsheet.current.options.editable !== false) {
+        
+        const rowId = libraryBase.jspreadsheet.current.selectedCell[1];
+        const columnId = libraryBase.jspreadsheet.current.selectedCell[0];
+        
+        // 한글 자음 입력으로 에디터 시작
+        openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, true, e);
+    }
+}
+
 const keyDownControls = function(e) {
     if (libraryBase.jspreadsheet.current) {
         if (libraryBase.jspreadsheet.current.edition) {
@@ -1402,9 +1430,10 @@ const keyDownControls = function(e) {
                                 openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, false, e);
                             } else if (
                                 (e.key.length === 1 || e.key === 'Process') &&
-                                !(e.altKey || isCtrl(e))
+                                !(e.altKey || isCtrl(e)) &&
+                                !isKoreanConsonant(e.key)
                             ) {
-                                // Start edition
+                                // Start edition (한글 자음 제외)
                                 openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, true, e);
                                 // Prevent entries in the calendar
                                 if (libraryBase.jspreadsheet.current.options.columns && libraryBase.jspreadsheet.current.options.columns[columnId] && libraryBase.jspreadsheet.current.options.columns[columnId].type == 'calendar') {
@@ -1537,6 +1566,7 @@ export const setEvents = function(root) {
     root.addEventListener("touchcancel", touchEndControls);
     root.addEventListener("touchmove", touchEndControls);
     document.addEventListener("keydown", keyDownControls);
+    document.addEventListener("keyup", keyUpControls);
 }
 
 export const destroyEvents = function(root) {
@@ -1551,4 +1581,5 @@ export const destroyEvents = function(root) {
     root.removeEventListener("touchend", touchEndControls);
     root.removeEventListener("touchcancel", touchEndControls);
     document.removeEventListener("keydown", keyDownControls);
+    document.removeEventListener("keyup", keyUpControls);
 }
