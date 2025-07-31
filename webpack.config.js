@@ -56,6 +56,7 @@ const webpack = {
         minimize: true
     },
     devServer: {
+        host: '0.0.0.0',
         static : {
             directory : path.join(__dirname, "/public")
         },
@@ -64,9 +65,13 @@ const webpack = {
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
             "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
         },
-        port: 8000,
+        allowedHosts: "all",
+        port: 2000,
+        historyApiFallback: {
+            index: '/index.html'
+        },
         devMiddleware: {
-            publicPath: "https://localhost:3000/",
+            publicPath: "/",
         },
         hot: "only",
     },
