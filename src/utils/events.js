@@ -1,6 +1,6 @@
 import jSuites from 'jsuites';
 
-import { closeEditor, openEditor, setCheckRadioValue } from './editor.js';
+import { closeEditor, openEditor, setCheckRadioValue, globalEditor } from './editor.js';
 import libraryBase from './libraryBase.js';
 import { down, first, last, left, right, up } from './keys.js';
 import { isColMerged, isRowMerged } from './merges.js';
@@ -12,6 +12,8 @@ import { setWidth } from './columns.js';
 import { moveRow, setHeight } from './rows.js';
 import version from './version.js';
 import { getCellNameFromCoords } from './helpers.js';
+
+
 
 const getElement = function(element) {
     let jssSection = 0;
@@ -138,6 +140,13 @@ const mouseUpControls = function(e) {
 
                     // Remove selection
                     removeCopySelection.call(libraryBase.jspreadsheet.current);
+                }
+            } else {
+                const target = e.target;
+                const x = parseInt(target.getAttribute('data-x'));
+                const y = parseInt(target.getAttribute('data-y'));
+                if (libraryBase.jspreadsheet.current.records[y] && libraryBase.jspreadsheet.current.records[y][x]) {
+                    openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[y][x].element, false);
                 }
             }
         }
@@ -1209,6 +1218,8 @@ const isKoreanConsonant = function(key) {
     return code >= 12593 && code <= 12622;
 };
 
+
+
 const keyDownControls = function(e) {
     if (libraryBase.jspreadsheet.current) {
         if (libraryBase.jspreadsheet.current.edition) {
@@ -1256,7 +1267,12 @@ const keyDownControls = function(e) {
                         editorTextarea.selectionStart = editorIndexOf + 1;
                         editorTextarea.selectionEnd = editorIndexOf + 1;
                     } else {
-                        libraryBase.jspreadsheet.current.edition[0].children[0].blur();
+                        // 전역 편집기 사용 시 직접 blur 처리
+                        if (globalEditor && globalEditor.currentCell === libraryBase.jspreadsheet.current.edition[0]) {
+                            globalEditor.blur();
+                        } else if (libraryBase.jspreadsheet.current.edition[0].children[0]) {
+                            libraryBase.jspreadsheet.current.edition[0].children[0].blur();
+                        }
                     }
                 }
             } else if (e.which == 9) {
@@ -1268,7 +1284,12 @@ const keyDownControls = function(e) {
                 ) {
                     closeEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.edition[0], true);
                 } else {
-                    libraryBase.jspreadsheet.current.edition[0].children[0].blur();
+                    // 전역 편집기 사용 시 직접 blur 처리
+                    if (globalEditor && globalEditor.currentCell === libraryBase.jspreadsheet.current.edition[0]) {
+                        globalEditor.blur();
+                    } else if (libraryBase.jspreadsheet.current.edition[0].children[0]) {
+                        libraryBase.jspreadsheet.current.edition[0].children[0].blur();
+                    }
                 }
             }
         }
@@ -1322,15 +1343,6 @@ const keyDownControls = function(e) {
                 // Move cursor
                 if (e.shiftKey) {
                     up.call(libraryBase.jspreadsheet.current);
-                    // 이동 후 에디터 열기
-                    setTimeout(() => {
-                        if (libraryBase.jspreadsheet.current.selectedCell && !libraryBase.jspreadsheet.current.edition) {
-                            const cell = libraryBase.jspreadsheet.current.records[libraryBase.jspreadsheet.current.selectedCell[1]][libraryBase.jspreadsheet.current.selectedCell[0]].element;
-                            if (cell && !cell.classList.contains('readonly')) {
-                                openEditor.call(libraryBase.jspreadsheet.current, cell, false, e);
-                            }
-                        }
-                    }, 0);
                 } else {
                     if (libraryBase.jspreadsheet.current.options.allowInsertRow != false) {
                         if (libraryBase.jspreadsheet.current.options.allowManualInsertRow != false) {
@@ -1342,30 +1354,12 @@ const keyDownControls = function(e) {
                     }
 
                     down.call(libraryBase.jspreadsheet.current);
-                    // 이동 후 에디터 열기
-                    setTimeout(() => {
-                        if (libraryBase.jspreadsheet.current.selectedCell && !libraryBase.jspreadsheet.current.edition) {
-                            const cell = libraryBase.jspreadsheet.current.records[libraryBase.jspreadsheet.current.selectedCell[1]][libraryBase.jspreadsheet.current.selectedCell[0]].element;
-                            if (cell && !cell.classList.contains('readonly')) {
-                                openEditor.call(libraryBase.jspreadsheet.current, cell, false, e);
-                            }
-                        }
-                    }, 0);
                 }
                 e.preventDefault();
             } else if (e.which == 9) {
                 // Tab
                 if (e.shiftKey) {
                     left.call(libraryBase.jspreadsheet.current);
-                    // 이동 후 에디터 열기
-                    setTimeout(() => {
-                        if (libraryBase.jspreadsheet.current.selectedCell && !libraryBase.jspreadsheet.current.edition) {
-                            const cell = libraryBase.jspreadsheet.current.records[libraryBase.jspreadsheet.current.selectedCell[1]][libraryBase.jspreadsheet.current.selectedCell[0]].element;
-                            if (cell && !cell.classList.contains('readonly')) {
-                                openEditor.call(libraryBase.jspreadsheet.current, cell, false, e);
-                            }
-                        }
-                    }, 0);
                 } else {
                     if (libraryBase.jspreadsheet.current.options.allowInsertColumn != false) {
                         if (libraryBase.jspreadsheet.current.options.allowManualInsertColumn != false) {
@@ -1377,15 +1371,6 @@ const keyDownControls = function(e) {
                     }
 
                     right.call(libraryBase.jspreadsheet.current);
-                    // 이동 후 에디터 열기
-                    setTimeout(() => {
-                        if (libraryBase.jspreadsheet.current.selectedCell && !libraryBase.jspreadsheet.current.edition) {
-                            const cell = libraryBase.jspreadsheet.current.records[libraryBase.jspreadsheet.current.selectedCell[1]][libraryBase.jspreadsheet.current.selectedCell[0]].element;
-                            if (cell && !cell.classList.contains('readonly')) {
-                                openEditor.call(libraryBase.jspreadsheet.current, cell, false, e);
-                            }
-                        }
-                    }, 0);
                 }
                 e.preventDefault();
             } else {
@@ -1445,13 +1430,17 @@ const keyDownControls = function(e) {
                                 // Start edition with current content F2
                                 openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, false, e);
                             } else if (e.key === 'Process' || e.key.length === 1 && !(e.altKey || isCtrl(e))) {
-                                if (isKoreanConsonant(e.key)) {
-                                    setTimeout(() => {
-                                        openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, true, e);
-                                    }, 0);
+                                // 이미 편집기가 열려있으면 입력만 처리
+                                if (libraryBase.jspreadsheet.current.edition) {
+                                    // 편집기가 이미 열려있으므로 입력 처리만
+                                    if (globalEditor && globalEditor.currentCell) {
+                                        globalEditor.focus();
+                                    }
                                 } else {
+                                    // 편집기가 열려있지 않으면 열기
                                     openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, true, e);
                                 }
+                                
                                 // Prevent entries in the calendar
                                 if (libraryBase.jspreadsheet.current.options.columns && libraryBase.jspreadsheet.current.options.columns[columnId] && libraryBase.jspreadsheet.current.options.columns[columnId].type == 'calendar') {
                                     e.preventDefault();

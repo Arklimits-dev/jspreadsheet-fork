@@ -5,6 +5,10 @@ import { setHistory } from "./history.js";
 import { updateCell, updateFormula, updateFormulaChain, updateTable } from "./internal.js";
 import { getColumnNameFromId, getIdFromColumnName } from "./internalHelpers.js";
 import { updateToolbar } from "./toolbar.js";
+import libraryBase from "./libraryBase.js";
+import { openEditor } from "./editor.js";
+
+
 
 export const updateCornerPosition = function() {
     const obj = this;
@@ -154,6 +158,8 @@ export const removeCopyingSelection = function() {
         copying[i].classList.remove('copying-bottom');
     }
 }
+
+
 
 export const updateSelectionFromCoords = function(x1, y1, x2, y2, origin) {
     const obj = this;

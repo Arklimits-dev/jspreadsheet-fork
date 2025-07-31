@@ -4,6 +4,147 @@ import dispatch from "./dispatch.js";
 import { getMask, isFormula, updateCell } from "./internal.js";
 import { setHistory } from './history.js';
 
+// 전역 편집기 (Luckysheet 방식)
+export let globalEditor = null;
+let globalEditorType = null; // 'input', 'textarea', 'contenteditable'
+
+// 전역 편집기 자동 초기화
+const autoInitGlobalEditor = function() {
+    if (!globalEditor) {
+        initGlobalEditor();
+    }
+};
+
+// 페이지 로드 시 전역 편집기 미리 초기화
+if (typeof window !== 'undefined') {
+    window.addEventListener('DOMContentLoaded', autoInitGlobalEditor);
+    // 이미 로드된 경우 즉시 초기화
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoInitGlobalEditor);
+    } else {
+        autoInitGlobalEditor();
+    }
+}
+
+/**
+ * 전역 편집기 초기화
+ */
+const initGlobalEditor = function() {
+    if (globalEditor && globalEditor.isInitialized) {
+        return globalEditor;
+    }
+    
+    // contenteditable div로 생성 (Luckysheet와 동일)
+    globalEditor = document.createElement('div');
+    globalEditor.id = 'jspreadsheet-global-editor';
+    globalEditor.contentEditable = true;
+    globalEditor.style.position = 'absolute';
+    globalEditor.style.zIndex = '1000';
+    globalEditor.style.padding = '2px';
+    globalEditor.style.fontFamily = 'inherit';
+    globalEditor.style.fontSize = 'inherit';
+    globalEditor.style.left = '-9999px';
+    globalEditor.style.top = '-9999px';
+    globalEditor.style.width = '100px';
+    globalEditor.style.height = '30px';
+    globalEditor.style.backgroundColor = 'transparent';
+    globalEditor.style.outline = 'none';
+    globalEditor.style.border = 'none';
+    globalEditor.style.pointerEvents = 'none';
+    globalEditor.style.whiteSpace = 'pre-wrap';
+    globalEditor.style.wordWrap = 'break-word';
+    globalEditor.style.overflow = 'hidden';
+    
+    // 한글 입력을 위한 이벤트 처리
+    let isComposing = false;
+    let pendingInput = null;
+    
+    globalEditor.addEventListener('compositionstart', () => {
+        isComposing = true;
+    });
+    
+    globalEditor.addEventListener('compositionend', () => {
+        isComposing = false;
+        // 조합 완료 후 pending된 입력 처리
+        if (pendingInput) {
+            globalEditor.textContent = pendingInput;
+            pendingInput = null;
+        }
+    });
+    
+    globalEditor.addEventListener('input', (e) => {
+        if (isComposing) {
+            // 조합 중이면 pending
+            pendingInput = e.target.textContent;
+            return;
+        }
+        // 조합이 완료된 경우 정상 처리
+    });
+    
+    // 편집기 닫기 이벤트 - focus 유지를 위해 blur 이벤트 제거
+    // blur 이벤트는 focus가 풀릴 때마다 발생하므로 제거
+    // 대신 Enter 키나 다른 명시적인 액션으로만 편집기 닫기
+    
+    // 키보드 이벤트 처리
+    globalEditor.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (globalEditor.currentCell) {
+                closeEditor.call(globalEditor.currentObj, globalEditor.currentCell, true);
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            if (globalEditor.currentCell) {
+                closeEditor.call(globalEditor.currentObj, globalEditor.currentCell, false);
+            }
+        } else if (e.key === 'Tab') {
+            e.preventDefault();
+            if (globalEditor.currentCell) {
+                closeEditor.call(globalEditor.currentObj, globalEditor.currentCell, true);
+            }
+        }
+    });
+    
+    document.body.appendChild(globalEditor);
+    globalEditorType = 'contenteditable';
+    
+    // 초기화 완료 표시
+    globalEditor.isInitialized = true;
+    
+    // 전역 편집기 focus 유지를 위한 이벤트 리스너
+    document.addEventListener('click', (e) => {
+        if (globalEditor && globalEditor.currentCell && e.target !== globalEditor && !globalEditor.contains(e.target)) {
+            // 편집기 외부 클릭 시 편집기 닫기
+            closeEditor.call(globalEditor.currentObj, globalEditor.currentCell, true);
+        }
+    });
+    
+    return globalEditor;
+};
+
+/**
+ * 전역 편집기 위치 조정
+ */
+const positionGlobalEditor = function(cell) {
+    // 전역 편집기가 없거나 초기화되지 않은 경우 초기화
+    if (!globalEditor || !globalEditor.isInitialized) {
+        initGlobalEditor();
+    }
+    
+    const rect = cell.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    // 편집기 활성화 스타일 (투명하게)
+    globalEditor.style.left = (rect.left + scrollLeft) + 'px';
+    globalEditor.style.top = (rect.top + scrollTop) + 'px';
+    globalEditor.style.width = rect.width + 'px';
+    globalEditor.style.height = rect.height + 'px';
+    globalEditor.style.backgroundColor = 'transparent';
+    globalEditor.style.border = 'none';
+    globalEditor.style.pointerEvents = 'auto';
+};
+
 /**
  * Open the editor
  *
@@ -23,25 +164,6 @@ export const openEditor = function(cell, empty, e) {
     // Overflow
     if (x > 0) {
         obj.records[y][x-1].element.style.overflow = 'hidden';
-    }
-
-    // Create editor
-    const createEditor = function(type) {
-        // Cell information
-        const info = cell.getBoundingClientRect();
-
-        // Create dropdown
-        const editor = document.createElement(type);
-        editor.style.width = (info.width) + 'px';
-        editor.style.height = (info.height - 2) + 'px';
-        editor.style.minHeight = (info.height - 2) + 'px';
-
-        // Edit cell
-        cell.classList.add('editor');
-        cell.innerHTML = '';
-        cell.appendChild(editor);
-
-        return editor;
     }
 
     // Readonly
@@ -94,7 +216,15 @@ export const openEditor = function(cell, empty, e) {
                 }
 
                 // Create editor
-                const editor = createEditor('div');
+                const editor = document.createElement('div');
+                editor.style.width = (cell.getBoundingClientRect().width) + 'px';
+                editor.style.height = (cell.getBoundingClientRect().height - 2) + 'px';
+                editor.style.minHeight = (cell.getBoundingClientRect().height - 2) + 'px';
+
+                // Edit cell
+                cell.classList.add('editor');
+                cell.innerHTML = '';
+                cell.appendChild(editor);
 
                 // On edition start
                 dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
@@ -120,7 +250,15 @@ export const openEditor = function(cell, empty, e) {
                 // Value
                 const value = obj.options.data[y][x];
                 // Create editor
-                const editor = createEditor('input');
+                const editor = document.createElement('input');
+                editor.style.width = (cell.getBoundingClientRect().width) + 'px';
+                editor.style.height = (cell.getBoundingClientRect().height - 2) + 'px';
+                editor.style.minHeight = (cell.getBoundingClientRect().height - 2) + 'px';
+
+                // Edit cell
+                cell.classList.add('editor');
+                cell.innerHTML = '';
+                cell.appendChild(editor);
 
                 dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
 
@@ -158,7 +296,15 @@ export const openEditor = function(cell, empty, e) {
             } else if (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].type == 'html') {
                 const value = obj.options.data[y][x];
                 // Create editor
-                const editor = createEditor('div');
+                const editor = document.createElement('div');
+                editor.style.width = (cell.getBoundingClientRect().width) + 'px';
+                editor.style.height = (cell.getBoundingClientRect().height - 2) + 'px';
+                editor.style.minHeight = (cell.getBoundingClientRect().height - 2) + 'px';
+
+                // Edit cell
+                cell.classList.add('editor');
+                cell.innerHTML = '';
+                cell.appendChild(editor);
 
                 dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
 
@@ -187,7 +333,15 @@ export const openEditor = function(cell, empty, e) {
                 // Value
                 const img = cell.children[0];
                 // Create editor
-                const editor = createEditor('div');
+                const editor = document.createElement('div');
+                editor.style.width = (cell.getBoundingClientRect().width) + 'px';
+                editor.style.height = (cell.getBoundingClientRect().height - 2) + 'px';
+                editor.style.minHeight = (cell.getBoundingClientRect().height - 2) + 'px';
+
+                // Edit cell
+                cell.classList.add('editor');
+                cell.innerHTML = '';
+                cell.appendChild(editor);
 
                 dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
 
@@ -209,56 +363,33 @@ export const openEditor = function(cell, empty, e) {
 
                 div.style.left = rect.left + 'px';
             } else {
-                // Value
+                // 기본 텍스트 편집기 - 전역 편집기 사용
                 const value = empty == true ? '' : obj.options.data[y][x];
 
-                // Basic editor
-                let editor;
-
-                if ((!obj.options.columns || !obj.options.columns[x] || obj.options.columns[x].wordWrap != false) && (obj.options.wordWrap == true || (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].wordWrap == true))) {
-                    editor = createEditor('textarea');
-                } else {
-                    editor = createEditor('input');
-                }
-
-                dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
-
+                // 전역 편집기 초기화 및 위치 조정
+                const editor = initGlobalEditor();
+                positionGlobalEditor(cell);
+                
+                // 전역 편집기에 현재 정보 저장
+                editor.currentObj = obj;
+                editor.currentCell = cell;
+                
+                // 값 설정
+                editor.textContent = value;
+                
+                // 포커스 및 커서 위치 설정
                 editor.focus();
-                editor.value = value;
-
-                // Column options
-                const options = obj.options.columns && obj.options.columns[x];
-
-                // Apply format when is not a formula
-                if (! isFormula(value)) {
-                    if (options) {
-                        // Format
-                        const opt = getMask(options);
-
-                        if (opt) {
-                            // Masking
-                            if (! options.disabledMaskOnEdition) {
-                                if (options.mask) {
-                                    const m = options.mask.split(';')
-                                    editor.setAttribute('data-mask', m[0]);
-                                } else if (options.locale) {
-                                    editor.setAttribute('data-locale', options.locale);
-                                }
-                            }
-                            // Input
-                            opt.input = editor;
-                            // Configuration
-                            editor.mask = opt;
-                            // Do not treat the decimals
-                            jSuites.mask.render(value, opt, false);
-                        }
-                    }
-                }
-
-                editor.onblur = function() {
-                    closeEditor.call(obj, cell, true);
-                };
-                editor.scrollLeft = editor.scrollWidth;
+                
+                // 커서를 끝으로 이동
+                const range = document.createRange();
+                const selection = window.getSelection();
+                range.selectNodeContents(editor);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                // On edition start
+                dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
             }
         }
     }
@@ -309,8 +440,27 @@ export const closeEditor = function(cell, save) {
                 }
                 cell.children[0].onblur = null;
             } else {
-                value = cell.children[0].value;
-                cell.children[0].onblur = null;
+                // 전역 편집기에서 값 가져오기
+                if (globalEditor && globalEditor.currentCell === cell) {
+                    value = globalEditor.textContent;
+                    // 전역 편집기 비활성화 (화면 밖으로 이동)
+                    globalEditor.style.left = '-9999px';
+                    globalEditor.style.top = '-9999px';
+                    globalEditor.style.width = '100px';
+                    globalEditor.style.height = '30px';
+                    globalEditor.style.backgroundColor = 'transparent';
+                    globalEditor.style.border = 'none';
+                    globalEditor.style.pointerEvents = 'none';
+                    globalEditor.currentCell = null;
+                    globalEditor.currentObj = null;
+                } else {
+                    value = cell.children[0].value;
+                }
+                
+                // 전역 편집기가 아닌 경우에만 onblur 제거
+                if (cell.children[0]) {
+                    cell.children[0].onblur = null;
+                }
 
                 // Column options
                 const options = obj.options.columns && obj.options.columns[x];
@@ -349,7 +499,9 @@ export const closeEditor = function(cell, save) {
             } else if (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].type == 'color') {
                 cell.children[0].color.close(true);
             } else {
-                cell.children[0].onblur = null;
+                if (cell.children[0]) {
+                    cell.children[0].onblur = null;
+                }
             }
         }
 
