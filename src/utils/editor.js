@@ -47,7 +47,7 @@ const initGlobalEditor = function() {
     globalEditor.style.top = '-9999px';
     globalEditor.style.width = '100px';
     globalEditor.style.height = '30px';
-    globalEditor.style.backgroundColor = 'transparent';
+    globalEditor.style.backgroundColor = 'white';
     globalEditor.style.outline = 'none';
     globalEditor.style.border = 'none';
     globalEditor.style.pointerEvents = 'none';
@@ -135,13 +135,10 @@ const positionGlobalEditor = function(cell) {
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
     
-    // 편집기 활성화 스타일 (투명하게)
     globalEditor.style.left = (rect.left + scrollLeft) + 'px';
     globalEditor.style.top = (rect.top + scrollTop) + 'px';
-    globalEditor.style.width = rect.width + 'px';
-    globalEditor.style.height = rect.height + 'px';
-    globalEditor.style.backgroundColor = 'transparent';
-    globalEditor.style.border = 'none';
+    globalEditor.style.width = rect.width - 5 + 'px';
+    globalEditor.style.height = rect.height - 5 + 'px';
     globalEditor.style.pointerEvents = 'auto';
 };
 
