@@ -1322,6 +1322,15 @@ const keyDownControls = function(e) {
                 // Move cursor
                 if (e.shiftKey) {
                     up.call(libraryBase.jspreadsheet.current);
+                    // 이동 후 에디터 열기
+                    setTimeout(() => {
+                        if (libraryBase.jspreadsheet.current.selectedCell && !libraryBase.jspreadsheet.current.edition) {
+                            const cell = libraryBase.jspreadsheet.current.records[libraryBase.jspreadsheet.current.selectedCell[1]][libraryBase.jspreadsheet.current.selectedCell[0]].element;
+                            if (cell && !cell.classList.contains('readonly')) {
+                                openEditor.call(libraryBase.jspreadsheet.current, cell, false, e);
+                            }
+                        }
+                    }, 0);
                 } else {
                     if (libraryBase.jspreadsheet.current.options.allowInsertRow != false) {
                         if (libraryBase.jspreadsheet.current.options.allowManualInsertRow != false) {
@@ -1333,12 +1342,30 @@ const keyDownControls = function(e) {
                     }
 
                     down.call(libraryBase.jspreadsheet.current);
+                    // 이동 후 에디터 열기
+                    setTimeout(() => {
+                        if (libraryBase.jspreadsheet.current.selectedCell && !libraryBase.jspreadsheet.current.edition) {
+                            const cell = libraryBase.jspreadsheet.current.records[libraryBase.jspreadsheet.current.selectedCell[1]][libraryBase.jspreadsheet.current.selectedCell[0]].element;
+                            if (cell && !cell.classList.contains('readonly')) {
+                                openEditor.call(libraryBase.jspreadsheet.current, cell, false, e);
+                            }
+                        }
+                    }, 0);
                 }
                 e.preventDefault();
             } else if (e.which == 9) {
                 // Tab
                 if (e.shiftKey) {
                     left.call(libraryBase.jspreadsheet.current);
+                    // 이동 후 에디터 열기
+                    setTimeout(() => {
+                        if (libraryBase.jspreadsheet.current.selectedCell && !libraryBase.jspreadsheet.current.edition) {
+                            const cell = libraryBase.jspreadsheet.current.records[libraryBase.jspreadsheet.current.selectedCell[1]][libraryBase.jspreadsheet.current.selectedCell[0]].element;
+                            if (cell && !cell.classList.contains('readonly')) {
+                                openEditor.call(libraryBase.jspreadsheet.current, cell, false, e);
+                            }
+                        }
+                    }, 0);
                 } else {
                     if (libraryBase.jspreadsheet.current.options.allowInsertColumn != false) {
                         if (libraryBase.jspreadsheet.current.options.allowManualInsertColumn != false) {
@@ -1350,6 +1377,15 @@ const keyDownControls = function(e) {
                     }
 
                     right.call(libraryBase.jspreadsheet.current);
+                    // 이동 후 에디터 열기
+                    setTimeout(() => {
+                        if (libraryBase.jspreadsheet.current.selectedCell && !libraryBase.jspreadsheet.current.edition) {
+                            const cell = libraryBase.jspreadsheet.current.records[libraryBase.jspreadsheet.current.selectedCell[1]][libraryBase.jspreadsheet.current.selectedCell[0]].element;
+                            if (cell && !cell.classList.contains('readonly')) {
+                                openEditor.call(libraryBase.jspreadsheet.current, cell, false, e);
+                            }
+                        }
+                    }, 0);
                 }
                 e.preventDefault();
             } else {
@@ -1408,13 +1444,14 @@ const keyDownControls = function(e) {
                             } else if (e.keyCode == 113) {
                                 // Start edition with current content F2
                                 openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, false, e);
-                            } else if (e.key === 'Process' || isKoreanConsonant(e.key)){
-                                openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, true, e);
-                                e.preventDefault(); 
-                            }
-                            else if (e.key.length === 1 && !(e.altKey || isCtrl(e))) {
-                                // Start edition (한글 자음 포함 - 자연스러운 IME 진행)
-                                openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, true, e);
+                            } else if (e.key === 'Process' || e.key.length === 1 && !(e.altKey || isCtrl(e))) {
+                                if (isKoreanConsonant(e.key)) {
+                                    setTimeout(() => {
+                                        openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, true, e);
+                                    }, 0);
+                                } else {
+                                    openEditor.call(libraryBase.jspreadsheet.current, libraryBase.jspreadsheet.current.records[rowId][columnId].element, true, e);
+                                }
                                 // Prevent entries in the calendar
                                 if (libraryBase.jspreadsheet.current.options.columns && libraryBase.jspreadsheet.current.options.columns[columnId] && libraryBase.jspreadsheet.current.options.columns[columnId].type == 'calendar') {
                                     e.preventDefault();
