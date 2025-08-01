@@ -163,6 +163,25 @@ export const openEditor = function(cell, empty, e) {
         obj.records[y][x-1].element.style.overflow = 'hidden';
     }
 
+    // Create editor
+    const createEditor = function(type) {
+        // Cell information
+        const info = cell.getBoundingClientRect();
+
+        // Create dropdown
+        const editor = document.createElement(type);
+        editor.style.width = (info.width) + 'px';
+        editor.style.height = (info.height - 2) + 'px';
+        editor.style.minHeight = (info.height - 2) + 'px';
+
+        // Edit cell
+        cell.classList.add('editor');
+        cell.innerHTML = '';
+        cell.appendChild(editor);
+
+        return editor;
+    }
+
     // Readonly
     if (cell.classList.contains('readonly') == true) {
         // Do nothing
@@ -213,15 +232,7 @@ export const openEditor = function(cell, empty, e) {
                 }
 
                 // Create editor
-                const editor = document.createElement('div');
-                editor.style.width = (cell.getBoundingClientRect().width) + 'px';
-                editor.style.height = (cell.getBoundingClientRect().height - 2) + 'px';
-                editor.style.minHeight = (cell.getBoundingClientRect().height - 2) + 'px';
-
-                // Edit cell
-                cell.classList.add('editor');
-                cell.innerHTML = '';
-                cell.appendChild(editor);
+                const editor = createEditor('div');
 
                 // On edition start
                 dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
@@ -247,15 +258,7 @@ export const openEditor = function(cell, empty, e) {
                 // Value
                 const value = obj.options.data[y][x];
                 // Create editor
-                const editor = document.createElement('input');
-                editor.style.width = (cell.getBoundingClientRect().width) + 'px';
-                editor.style.height = (cell.getBoundingClientRect().height - 2) + 'px';
-                editor.style.minHeight = (cell.getBoundingClientRect().height - 2) + 'px';
-
-                // Edit cell
-                cell.classList.add('editor');
-                cell.innerHTML = '';
-                cell.appendChild(editor);
+                const editor = createEditor('input');
 
                 dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
 
@@ -293,15 +296,7 @@ export const openEditor = function(cell, empty, e) {
             } else if (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].type == 'html') {
                 const value = obj.options.data[y][x];
                 // Create editor
-                const editor = document.createElement('div');
-                editor.style.width = (cell.getBoundingClientRect().width) + 'px';
-                editor.style.height = (cell.getBoundingClientRect().height - 2) + 'px';
-                editor.style.minHeight = (cell.getBoundingClientRect().height - 2) + 'px';
-
-                // Edit cell
-                cell.classList.add('editor');
-                cell.innerHTML = '';
-                cell.appendChild(editor);
+                const editor = createEditor('div');
 
                 dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
 
@@ -330,15 +325,7 @@ export const openEditor = function(cell, empty, e) {
                 // Value
                 const img = cell.children[0];
                 // Create editor
-                const editor = document.createElement('div');
-                editor.style.width = (cell.getBoundingClientRect().width) + 'px';
-                editor.style.height = (cell.getBoundingClientRect().height - 2) + 'px';
-                editor.style.minHeight = (cell.getBoundingClientRect().height - 2) + 'px';
-
-                // Edit cell
-                cell.classList.add('editor');
-                cell.innerHTML = '';
-                cell.appendChild(editor);
+                const editor = createEditor('div');
 
                 dispatch.call(obj, 'oncreateeditor', obj, cell, parseInt(x), parseInt(y), null, obj.options.columns[x]);
 
