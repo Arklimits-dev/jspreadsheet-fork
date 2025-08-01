@@ -43,12 +43,8 @@ const initGlobalEditor = function() {
     globalEditor.style.position = 'absolute';
     globalEditor.style.zIndex = '1000';
     globalEditor.style.padding = '2px';
-    globalEditor.style.fontFamily = 'inherit';
-    globalEditor.style.fontSize = 'inherit';
     globalEditor.style.left = '-9999px';
     globalEditor.style.top = '-9999px';
-    globalEditor.style.width = '100px';
-    globalEditor.style.height = '30px';
     globalEditor.style.backgroundColor = 'white';
     globalEditor.style.outline = 'none';
     globalEditor.style.border = 'none';
@@ -142,6 +138,7 @@ const positionGlobalEditor = function(cell) {
     globalEditor.style.width = rect.width - 5 + 'px';
     globalEditor.style.height = rect.height - 5 + 'px';
     globalEditor.style.pointerEvents = 'auto';
+    globalEditor.style.zIndex = '1000';
 };
 
 /**
@@ -174,7 +171,6 @@ export const openEditor = function(cell, empty, e) {
         const editor = document.createElement(type);
         editor.style.width = (info.width) + 'px';
         editor.style.height = (info.height - 2) + 'px';
-        editor.style.minHeight = (info.height - 2) + 'px';
 
         // Edit cell
         cell.classList.add('editor');
@@ -432,11 +428,6 @@ export const closeEditor = function(cell, save) {
                     // 전역 편집기 비활성화 (화면 밖으로 이동)
                     globalEditor.style.left = '-9999px';
                     globalEditor.style.top = '-9999px';
-                    globalEditor.style.width = '100px';
-                    globalEditor.style.height = '30px';
-                    globalEditor.style.backgroundColor = 'transparent';
-                    globalEditor.style.border = 'none';
-                    globalEditor.style.pointerEvents = 'none';
                     globalEditor.currentCell = null;
                     globalEditor.currentObj = null;
                 } else {
@@ -473,23 +464,27 @@ export const closeEditor = function(cell, save) {
         } else {
             obj.setValue(cell, value);
         }
-    } else {
-        if (obj.options.columns && obj.options.columns[x] && typeof obj.options.columns[x].type === 'object') {
-            // Custom editor
-            obj.options.columns[x].type.closeEditor(cell, save, parseInt(x), parseInt(y), obj, obj.options.columns[x]);
-        } else {
-            if (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].type == 'dropdown') {
-                cell.children[0].dropdown.close(true);
-            } else if (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].type == 'calendar') {
-                cell.children[0].calendar.close(true);
-            } else if (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].type == 'color') {
-                cell.children[0].color.close(true);
             } else {
-                if (cell.children[0]) {
-                    cell.children[0].onblur = null;
+            if (obj.options.columns && obj.options.columns[x] && typeof obj.options.columns[x].type === 'object') {
+                // Custom editor
+                obj.options.columns[x].type.closeEditor(cell, save, parseInt(x), parseInt(y), obj, obj.options.columns[x]);
+            } else {
+                if (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].type == 'dropdown') {
+                    cell.children[0].dropdown.close(true);
+                } else if (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].type == 'calendar') {
+                    cell.children[0].calendar.close(true);
+                } else if (obj.options.columns && obj.options.columns[x] && obj.options.columns[x].type == 'color') {
+                    cell.children[0].color.close(true);
+                } else {
+                    // 전역 편집기 숨기기 (ESC 키 처리)
+                    if (globalEditor && globalEditor.currentCell === cell) {
+                        globalEditor.style.left = '-9999px';
+                        globalEditor.style.top = '-9999px';
+                        globalEditor.currentCell = null;
+                        globalEditor.currentObj = null;
+                    }
                 }
             }
-        }
 
         // Restore value
         cell.innerHTML = obj.edition && obj.edition[1] ? obj.edition[1] : '';
