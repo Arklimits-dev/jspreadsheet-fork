@@ -8,21 +8,23 @@ import { setHistory } from './history.js';
 export let globalEditor = null;
 let globalEditorType = null; // 'input', 'textarea', 'contenteditable'
 
-// 전역 편집기 자동 초기화
+// 전역 편집기 자동 초기화 - 지연 초기화
 const autoInitGlobalEditor = function() {
     if (!globalEditor) {
         initGlobalEditor();
     }
 };
 
-// 페이지 로드 시 전역 편집기 미리 초기화
+// 전역 편집기 초기화를 완전히 지연시킴 - 모듈 로딩 완료 후
 if (typeof window !== 'undefined') {
-    window.addEventListener('DOMContentLoaded', autoInitGlobalEditor);
-    // 이미 로드된 경우 즉시 초기화
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', autoInitGlobalEditor);
-    } else {
-        autoInitGlobalEditor();
+    // 모든 모듈이 로드된 후 초기화
+    window.addEventListener('load', () => {
+        setTimeout(autoInitGlobalEditor, 0);
+    });
+    
+    // 이미 load 이벤트가 발생한 경우
+    if (document.readyState === 'complete') {
+        setTimeout(autoInitGlobalEditor, 0);
     }
 }
 
