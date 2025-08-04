@@ -167,6 +167,12 @@ const mouseDownControls = function(e) {
 
     let mouseButton;
 
+    if (globalEditor && globalEditor.currentCell && (e.target === globalEditor || globalEditor.contains(e.target))) {
+        // 전역 에디터 내부를 클릭했을 때는 편집기를 유지하고 스프레드시트의 기본 처리(셀 닫힘 등)를 하지 않는다
+        // 단, 에디터 내부 동작(커서 이동 등)은 정상적으로 이루어져야 하므로 preventDefault는 호출하지 않는다.
+        return;
+    }
+
     if (e.buttons) {
         mouseButton = e.buttons;
     } else if (e.button) {
