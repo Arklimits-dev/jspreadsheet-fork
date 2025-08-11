@@ -53,50 +53,19 @@ const initGlobalEditor = function() {
     globalEditor.style.wordWrap = 'break-word';
     globalEditor.style.overflow = 'hidden';
     
-    // 한글 입력을 위한 이벤트 처리
-    let isComposing = false;
-    let pendingInput = null;
-    
-    globalEditor.addEventListener('compositionstart', () => {
-        isComposing = true;
-    });
-    
-    globalEditor.addEventListener('compositionend', () => {
-        isComposing = false;
-        // 조합 완료 후 pending된 입력 처리
-        if (pendingInput) {
-            globalEditor.textContent = pendingInput;
-            pendingInput = null;
-        }
-    });
-    
-    globalEditor.addEventListener('input', (e) => {
-        if (isComposing) {
-            // 조합 중이면 pending
-            pendingInput = e.target.textContent;
-            return;
-        }
-        // 조합이 완료된 경우 정상 처리
-    });
-    
-    // 편집기 닫기 이벤트 - focus 유지를 위해 blur 이벤트 제거
-    // blur 이벤트는 focus가 풀릴 때마다 발생하므로 제거
-    // 대신 Enter 키나 다른 명시적인 액션으로만 편집기 닫기
-    
+
     // 키보드 이벤트 처리
     globalEditor.addEventListener('keydown', (e) => {
+   
         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
             if (globalEditor.currentCell) {
                 closeEditor.call(globalEditor.currentObj, globalEditor.currentCell, true);
             }
         } else if (e.key === 'Escape') {
-            e.preventDefault();
             if (globalEditor.currentCell) {
                 closeEditor.call(globalEditor.currentObj, globalEditor.currentCell, false);
             }
         } else if (e.key === 'Tab') {
-            e.preventDefault();
             if (globalEditor.currentCell) {
                 closeEditor.call(globalEditor.currentObj, globalEditor.currentCell, true);
             }
@@ -149,7 +118,6 @@ const positionGlobalEditor = function(cell) {
  */
 export const openEditor = function(cell, empty, e) {
     const obj = this;
-
     // Get cell position
     const y = cell.getAttribute('data-y');
     const x = cell.getAttribute('data-x');
@@ -357,11 +325,11 @@ export const openEditor = function(cell, empty, e) {
                 editor.currentCell = cell;
                 
                 // 값 설정
+                //한글오류해결
                 editor.textContent = value;
                 
                 // 포커스 및 커서 위치 설정
                 editor.focus();
-                
                 // 커서를 끝으로 이동
                 const range = document.createRange();
                 const selection = window.getSelection();
@@ -391,7 +359,6 @@ export const closeEditor = function(cell, save) {
     const y = parseInt(cell.getAttribute('data-y'));
 
     let value;
-
     // Get cell properties
     if (save == true) {
         // If custom editor
