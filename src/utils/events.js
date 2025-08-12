@@ -1345,6 +1345,7 @@ const keyDownControls = function(e) {
                         );
                     }
                 }
+                e.preventDefault()
             } else if (e.which == 13) {
                 // Move cursor
                 if (e.shiftKey) {
